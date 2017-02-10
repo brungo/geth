@@ -9,10 +9,9 @@ To run the example you have to get ISE full licence installed and running in a L
 
 ### How do I get set up? ###
 
-* Summary:
-  ** Genrate the cores, example design and simulation project with root location Makefile   
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
+#### Summary: ####
+##### Generate the cores, example design and simulation project   
+* Set the environment with **. /PATH_TO_ISE/ISE_DS/settings64.sh**
+* Run **make** on the root directory
+* Go to /geth/simulation directory and run the Makefile
+* Once the simulation files were created, run **make see**
