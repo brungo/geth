@@ -1,0 +1,84 @@
+Running: /home/bruno/Escritorio/14.7/ISE_DS/ISE/bin/lin64/unwrapped/fuse work.testbench -prj files.prj -L unisim -L secureip -timeprecision_vhdl fs -o testbench 
+ISim P.20131013 (signature 0xfbc00daa)
+Number of CPUs detected in this system: 4
+Turning on mult-threading, number of parallel sub-compilation jobs: 8 
+Determining compilation order of HDL files
+Parsing VHDL file "../example_design/tri_mode_eth_mac_example_design.vhd" into library work
+Parsing VHDL file "../example_design/reset_sync.vhd" into library work
+Parsing VHDL file "../example_design/address_swap_module.vhd" into library work
+Parsing VHDL file "../example_design/sync_block.vhd" into library work
+Parsing VHDL file "../example_design/tri_mode_eth_mac_block.vhd" into library work
+Parsing VHDL file "../example_design/tri_mode_eth_mac_locallink.vhd" into library work
+Parsing VHDL file "../example_design/tx_clk_gen.vhd" into library work
+Parsing VHDL file "../example_design/physical/gmii_if.vhd" into library work
+Parsing VHDL file "../example_design/fifo/rx_client_fifo.vhd" into library work
+Parsing VHDL file "../example_design/fifo/ten_100_1g_eth_fifo.vhd" into library work
+Parsing VHDL file "../example_design/fifo/tx_client_fifo.vhd" into library work
+Parsing VHDL file "../../tri_mode_eth_mac.vhd" into library work
+Parsing VHDL file "demo_tb.vhd" into library work
+Starting static elaboration
+Completed static elaboration
+Fuse Memory Usage: 188748 KB
+Fuse CPU Usage: 2300 ms
+Compiling package standard
+Compiling package std_logic_1164
+Compiling package numeric_std
+Compiling package vcomponents
+Compiling package std_logic_arith
+Compiling package std_logic_unsigned
+Compiling package textio
+Compiling package vital_timing
+Compiling package vital_primitives
+Compiling package vpkg
+Compiling architecture oddr_v of entity ODDR [\ODDR("OPPOSITE_EDGE",'0',"SYNC"...]
+Compiling architecture bufg_v of entity BUFG [bufg_default]
+Compiling architecture fdpe_v of entity FDPE [\FDPE('1')\]
+Compiling architecture rtl of entity reset_sync [\reset_sync("11")\]
+Compiling architecture idelayctrl_v of entity IDELAYCTRL [idelayctrl_default]
+Compiling architecture bufgmux_v of entity BUFGMUX [\BUFGMUX("SYNC")(1,4)\]
+Compiling architecture rtl of entity tx_clk_gen [tx_clk_gen_default]
+Compiling architecture fd_v of entity FD [\FD('0')\]
+Compiling architecture structural of entity sync_block [\sync_block("00")\]
+Compiling architecture bufio_v of entity BUFIO [bufio_default]
+Compiling architecture bufr_v of entity BUFR [\BUFR("BYPASS","VIRTEX4")(1,6,1,...]
+Compiling architecture iodelaye1_v of entity IODELAYE1 [\IODELAYE1(false,"I",false,"FIXE...]
+Compiling architecture phy_if of entity gmii_if [gmii_if_default]
+Compiling architecture vcc_v of entity VCC [vcc_default]
+Compiling architecture gnd_v of entity GND [gnd_default]
+Compiling architecture fdre_v of entity FDRE [\FDRE('0')\]
+Compiling architecture lut2_v of entity LUT2 [\LUT2("1000")(0,3)\]
+Compiling architecture fde_v of entity FDE [\FDE('0')\]
+Compiling architecture srlc16e_v of entity SRLC16E [\SRLC16E("0000000000000000")(0,1...]
+Compiling architecture lut6_v of entity LUT6 [\LUT6("0100000000000000000000000...]
+Compiling architecture lut5_v of entity LUT5 [\LUT5("0101010011111111010101000...]
+Compiling architecture muxf7_v of entity MUXF7 [muxf7_default]
+Compiling architecture inv_v of entity INV [inv_default]
+Compiling architecture lut4_v of entity LUT4 [\LUT4("0001010100000100")(0,15)\]
+Compiling architecture lut3_v of entity LUT3 [\LUT3("11001010")(0,7)\]
+Compiling architecture fdr_v of entity FDR [\FDR('0')\]
+Compiling architecture fds_v of entity FDS [\FDS('1')\]
+Compiling architecture lut1_v of entity LUT1 [\LUT1("0010")(0,3)\]
+Compiling architecture fdse_v of entity FDSE [\FDSE('1')\]
+Compiling architecture muxcy_v of entity MUXCY [muxcy_default]
+Compiling architecture xorcy_v of entity XORCY [xorcy_default]
+Compiling architecture srl16e_v of entity SRL16E [\SRL16E("0000000000000000")(0,15...]
+Compiling architecture fdce_v of entity FDCE [\FDCE('0')\]
+Compiling architecture muxf5_v of entity MUXF5 [muxf5_default]
+Compiling architecture fdp_v of entity FDP [\FDP('1')\]
+Compiling architecture structure of entity tri_mode_eth_mac [tri_mode_eth_mac_default]
+Compiling architecture wrapper of entity tri_mode_eth_mac_block [tri_mode_eth_mac_block_default]
+Compiling architecture ramb16_s9_s9_v of entity RAMB16_S9_S9 [\RAMB16_S9_S9:testbench:dut:trim...]
+Compiling architecture rtl of entity tx_client_fifo [\tx_client_fifo:testbench:dut:tr...]
+Compiling architecture rtl of entity rx_client_fifo [\rx_client_fifo:testbench:dut:tr...]
+Compiling architecture rtl of entity ten_100_1g_eth_fifo [\ten_100_1g_eth_fifo:testbench:d...]
+Compiling architecture wrapper of entity tri_mode_eth_mac_locallink [\tri_mode_eth_mac_locallink:test...]
+Compiling architecture arch1 of entity address_swap_module [address_swap_module_default]
+Compiling architecture wrapper of entity tri_mode_eth_mac_example_design [\tri_mode_eth_mac_example_design...]
+Compiling architecture behav of entity testbench
+Time Resolution for simulation is 1fs.
+Waiting for 1 sub-compilation(s) to finish...
+Compiled 973 VHDL Units
+Built simulation executable testbench
+Fuse Memory Usage: 780856 KB
+Fuse CPU Usage: 4090 ms
+GCC CPU Usage: 10460 ms
