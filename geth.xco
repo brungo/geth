@@ -1,7 +1,7 @@
 ##############################################################
 #
 # Xilinx Core Generator version 14.7
-# Date: Thu Feb  9 17:51:19 2017
+# Date: Fri Feb 10 21:17:41 2017
 #
 ##############################################################
 #
@@ -41,7 +41,7 @@ SELECT Tri_Mode_Ethernet_MAC family Xilinx,_Inc. 4.6
 # BEGIN Parameters
 CSET address_filter=false
 CSET clock_enables=true
-CSET component_name=tri_mode_eth_mac
+CSET component_name=geth
 CSET half_duplex=true
 CSET mac_speed=Tri_speed
 CSET management_interface=true
@@ -52,4 +52,4 @@ CSET physical_interface=GMII
 MISC pkg_timestamp=2013-10-13T18:46:09Z
 # END Extra information
 GENERATE
-# CRC: e9166d99
+# CRC: 5ecb1b37
