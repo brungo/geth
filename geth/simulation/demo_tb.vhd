@@ -48,7 +48,7 @@
 -- regulations governing limitations on product liability.
 --
 -- THIS COPYRIGHT NOTICE AND DISCLAIMER MUST BE RETAINED AS
--- PART OF THIS FILE AT ALL TIMES. 
+-- PART OF THIS FILE AT ALL TIMES.
 -- ------------------------------------------------------------------------------
 -- Description: This testbench will exercise the ports of the MAC core
 --              to demonstrate the functionality.
@@ -563,7 +563,7 @@ architecture behav of testbench is
   ------------------------------------------------------------------------------
 
   -- Delay to provide setup and hold timing at the GMII/RGMII.
-  constant dly : time := 5.8 ns; 
+  constant dly : time := 5.8 ns;
   -- testbench signals
   signal reset                : std_logic                     := '1';             -- start in reset
   signal tx_clk               : std_logic;
@@ -706,18 +706,18 @@ begin
            if mdio = '1' and last_mdio = '0' then
               mdio_count <= "000001";
            end if;
-        end if; 
-     end if; 
+        end if;
+     end if;
   end process p_mdio_count;
-  
+
   mdio <= '1' when (mdio_read = '1' and (mdio_count >= "001110") and (mdio_count <= "011111")) else 'Z';
-  
+
   -- only respond to phy and reg address == 0
   p_mdio_check : process (mdc, reset)
   begin
      if (reset = '1') then
-        mdio_read <= '0';  
-        mdio_addr <= '1'; -- this will go low if the address doesn't match required   
+        mdio_read <= '0';
+        mdio_addr <= '1'; -- this will go low if the address doesn't match required
         mdio_fail <= '0';
      elsif mdc'event and mdc = '1' then
         if (mdio_count = "000010") then
@@ -763,7 +763,7 @@ begin
               end if;
            end if;
         end if;
-     end if;    
+     end if;
   end process p_mdio_check;
 
 
@@ -884,7 +884,7 @@ begin
       wait for 1000 ns;
 
       wait for 100 ns;
-      
+
       assert false
         report "Timing checks are valid" & cr
         severity note;
@@ -916,7 +916,7 @@ begin
 
     --------------------------------------------------
     -- Procedure to perform a Host Configuration Read
-    -- An extra cycle is required as the example design 
+    -- An extra cycle is required as the example design
     -- has an extra pipeline delay
     --------------------------------------------------
     procedure host_read(reg_address: in std_logic_vector(8 downto 0);
@@ -963,7 +963,7 @@ begin
 
     --------------------------------------------------
     -- Procedure to perform an MDIO Configuration Read
-    -- An extra cycle is required as the example design 
+    -- An extra cycle is required as the example design
     -- has an extra pipeline delay
     --------------------------------------------------
     procedure p_mdio_read(phy_addr: in std_logic_vector(4 downto 0);
@@ -1009,13 +1009,13 @@ begin
         report "Reading Management Configuration  Register...." & cr
         severity note;
       host_read(config_management_add, rd_data_value);
-      
+
       -- confirm the write took place - i.e not still in reset
       while rd_data_value /= x"00000049" loop
         assert false
           report "Retrying host access." & cr
           severity note;
-      
+
         host_write(config_management_add, x"00000049");
         host_read(config_management_add, rd_data_value);
       end loop;
@@ -1049,17 +1049,16 @@ begin
 
 
   begin  -- process p_management
-
   assert false
       report "Timing checks are not valid" & cr
       severity note;
 
-    current_speed <= "10";
-    assert false
-      report "Setting speed to 1GHz...." & cr
-      severity note;
-    host_write(emac_config_add, "10000000000000000000000000000000");
-    
+    current_speed <= "01";
+    -- assert false
+    --   report "Setting speed to 1GHz...." & cr
+    --   severity note;
+    -- host_write(emac_config_add, "10000000000000000000000000000000");
+
     -- reset the core
     mac_reset;
 
@@ -1067,18 +1066,18 @@ begin
     -- Configure the MAC though the Management I/F.
     --------------------------------------------------------------------
     configure_mac;
-
-    -- Signal that configuration is complete.  Other processes will now
-    -- be allowed to run.
-    management_config_finished <= true;
-
-    --------------------------------------------------------------------
-    -- The stimulus process will now send 4 frames at 1Gb/s.
-    --------------------------------------------------------------------
-
-    -- Wait for 1G monitor process to complete.
-    wait until tx_monitor_finished_1G;
-    management_config_finished <= false;
+    --
+    -- -- Signal that configuration is complete.  Other processes will now
+    -- -- be allowed to run.
+    -- management_config_finished <= true;
+    --
+    -- --------------------------------------------------------------------
+    -- -- The stimulus process will now send 4 frames at 1Gb/s.
+    -- --------------------------------------------------------------------
+    --
+    -- -- Wait for 1G monitor process to complete.
+    -- wait until tx_monitor_finished_1G;
+    -- management_config_finished <= false;
 
 
     --------------------------------------------------------------------
@@ -1113,65 +1112,65 @@ begin
     wait until tx_monitor_finished_100M;
     management_config_finished <= false;
 
-    --------------------------------------------------------------------
-    -- Change the speed to 10Mb/s and send the 4 frames
-    --------------------------------------------------------------------
-
-    assert false
-      report "Timing checks are not valid" & cr
-      severity note;
-
-    assert false
-      report "Setting speed to 10Mb/s...." & cr
-      severity note;
-    host_write(emac_config_add, "00000000000000000000000000000000");
-    -- cleanly switch the mii clock wait for mii to go low and set clock 
-    -- to low setting until mii_10 is low
-    wait until mii_tx_clk'event and mii_tx_clk = '0';
-    current_speed <= "11";
-    wait until mii_tx_clk10'event and mii_tx_clk10 = '0';
-    current_speed <= "00";
-
-    -- A reset is required after any speed change
-    wait for 1000 ns;
-    mac_reset;
-    --------------------------------------------------------------------
-    -- Configure the MAC though the Management I/F.
-    --------------------------------------------------------------------
-    configure_mac;
-    --------------------------------------------------------------------
-    -- Perform MDIO reads and writes when running at 10M as this has little 
-    -- impact upon simulation time
-    -- read write from phy address 7 reg address 0
-    -- force bit 10 of the read value to 0
-    --------------------------------------------------------------------
-    p_mdio_read("00111", "00000",rd_data_value);
-    p_mdio_write("00111", "00000",rd_data_value(15 downto 11) & '0' & rd_data_value(9 downto 0));
-    -- Signal that configuration is complete.  Other processes will now
-    -- be allowed to run.
-    management_config_finished <= true;
-    
-    -- Wait for 100M monitor process to complete.
-    wait until tx_monitor_finished_10M;
-    management_config_finished <= false;
-    
-    --------------------------------------------------------------------
-    -- Change the speed back to 1Gb/s and send the 4 frames
-    --------------------------------------------------------------------
-
-    wait for 10000 ns;
-    assert false
-      report "Timing checks are not valid" & cr
-      severity note;
-
-    assert false
-      report "Setting speed to 1Gb/s...." & cr
-      severity note;
-    current_speed <= "10";
-
-    host_write(emac_config_add, "10000000000000000000000000000000");
-
-
+    -- --------------------------------------------------------------------
+    -- -- Change the speed to 10Mb/s and send the 4 frames
+    -- --------------------------------------------------------------------
+    --
+    -- assert false
+    --   report "Timing checks are not valid" & cr
+    --   severity note;
+    --
+    -- assert false
+    --   report "Setting speed to 10Mb/s...." & cr
+    --   severity note;
+    -- host_write(emac_config_add, "00000000000000000000000000000000");
+    -- -- cleanly switch the mii clock wait for mii to go low and set clock
+    -- -- to low setting until mii_10 is low
+    -- wait until mii_tx_clk'event and mii_tx_clk = '0';
+    -- current_speed <= "11";
+    -- wait until mii_tx_clk10'event and mii_tx_clk10 = '0';
+    -- current_speed <= "00";
+    --
+    -- -- A reset is required after any speed change
+    -- wait for 1000 ns;
+    -- mac_reset;
+    -- --------------------------------------------------------------------
+    -- -- Configure the MAC though the Management I/F.
+    -- --------------------------------------------------------------------
+    -- configure_mac;
+    -- --------------------------------------------------------------------
+    -- -- Perform MDIO reads and writes when running at 10M as this has little
+    -- -- impact upon simulation time
+    -- -- read write from phy address 7 reg address 0
+    -- -- force bit 10 of the read value to 0
+    -- --------------------------------------------------------------------
+    -- p_mdio_read("00111", "00000",rd_data_value);
+    -- p_mdio_write("00111", "00000",rd_data_value(15 downto 11) & '0' & rd_data_value(9 downto 0));
+    -- -- Signal that configuration is complete.  Other processes will now
+    -- -- be allowed to run.
+    -- management_config_finished <= true;
+    --
+    -- -- Wait for 100M monitor process to complete.
+    -- wait until tx_monitor_finished_10M;
+    -- management_config_finished <= false;
+    --
+    -- --------------------------------------------------------------------
+    -- -- Change the speed back to 1Gb/s and send the 4 frames
+    -- --------------------------------------------------------------------
+    --
+    -- wait for 10000 ns;
+    -- assert false
+    --   report "Timing checks are not valid" & cr
+    --   severity note;
+    --
+    -- assert false
+    --   report "Setting speed to 1Gb/s...." & cr
+    --   severity note;
+    -- current_speed <= "10";
+    --
+    -- host_write(emac_config_add, "10000000000000000000000000000000");
+    --
+    --
     -- A reset is required after any speed change
     wait for 100 ns;
     mac_reset;
@@ -1182,7 +1181,7 @@ begin
     -- Signal that configuration is complete.  Other processes will now
     -- be allowed to run.
     management_config_finished <= true;
-    
+
 
     wait;
 
@@ -1207,95 +1206,95 @@ begin
     ----------------------------------------------------------
     -- Procedure to inject a frame into the receiver at 1Gb/s
     ----------------------------------------------------------
-    procedure send_frame_1g (current_frame : in natural) is
-      variable current_col   : natural := 0;  -- Column counter within frame
-      variable fcs           : std_logic_vector(31 downto 0);
-    begin
-
-      wait until gmii_rx_clk'event and gmii_rx_clk = '1';
-
-      -- Reset the FCS calculation
-      fcs         := (others => '0');
-
-      -- Adding the preamble field
-      for j in 0 to 7 loop
-        gmii_rxd   <= "01010101" after dly;
-        gmii_rx_dv <= '1' after dly;
-        gmii_rx_er <= '0' after dly;
-        wait until gmii_rx_clk'event and gmii_rx_clk = '1';
-      end loop;
-
-      -- Adding the Start of Frame Delimiter (SFD)
-      gmii_rxd   <= "11010101" after dly;
-      gmii_rx_dv <= '1' after dly;
-      wait until gmii_rx_clk'event and gmii_rx_clk = '1';
-
-      current_col := 0;
-      gmii_rxd     <= to_stdlogicvector(frame_data(current_frame).columns(current_col).data) after dly;
-      gmii_rx_dv   <= to_stdUlogic(frame_data(current_frame).columns(current_col).valid) after dly;
-      gmii_rx_er   <= to_stdUlogic(frame_data(current_frame).columns(current_col).error) after dly;
-      fcs          := calc_crc(to_stdlogicvector(frame_data(current_frame).columns(current_col).data), fcs);
-
-      wait until gmii_rx_clk'event and gmii_rx_clk = '1';
-
-      current_col := current_col + 1;
-      -- loop over columns in frame.
-      while frame_data(current_frame).columns(current_col).valid /= '0' loop
-        -- send one column of data
-        gmii_rxd   <= to_stdlogicvector(frame_data(current_frame).columns(current_col).data) after dly;
-        gmii_rx_dv <= to_stdUlogic(frame_data(current_frame).columns(current_col).valid) after dly;
-        gmii_rx_er   <= to_stdUlogic(frame_data(current_frame).columns(current_col).error) after dly;
-        fcs          := calc_crc(to_stdlogicvector(frame_data(current_frame).columns(current_col).data), fcs);
-
-        current_col := current_col + 1;
-        wait until gmii_rx_clk'event and gmii_rx_clk = '1';  -- wait for next clock tick
-
-      end loop;
-
-      -- Send the CRC.
-      for j in 0 to 3 loop
-         gmii_rxd   <= fcs(((8*j)+7) downto (8*j)) after dly;
-         gmii_rx_dv <= '1' after dly;
-         gmii_rx_er <= '0' after dly;
-         wait until gmii_rx_clk'event and gmii_rx_clk = '1';  -- wait for next clock tick
-      end loop;
-
-      if (test_half_duplex = '1') then
-        -- Extend to slot time
-        if current_frame = 0 then
-          for j in 0 to ((512 -4) - current_col) loop
-            gmii_rxd   <= "00001111" after dly;
-            gmii_rx_dv <= '0' after dly;
-            gmii_rx_er <= '1' after dly;
-            wait until gmii_rx_clk'event and gmii_rx_clk = '1';
-          end loop;
-        elsif current_frame = 3 then
-          gmii_rxd   <= (others => '0') after dly;
-          gmii_rx_dv <= '0' after dly;
-          gmii_rx_er <= '0' after dly;
-          for j in 0 to 7 loop
-            wait until gmii_rx_clk'event and gmii_rx_clk = '1';
-          end loop;
-        else
-          for j in 0 to 11 loop
-            gmii_rxd   <= "00001111" after dly;
-            gmii_rx_dv <= '0' after dly;
-            gmii_rx_er <= '1' after dly;
-            wait until gmii_rx_clk'event and gmii_rx_clk = '1';
-          end loop;
-        end if;
-      else
-        -- Clear the data lines.
-        gmii_rxd   <= (others => '0') after dly;
-        gmii_rx_dv <=  '0' after dly;
-
-        -- Adding the minimum Interframe gap for a receiver (8 idles)
-        for j in 0 to 7 loop
-          wait until gmii_rx_clk'event and gmii_rx_clk = '1';
-        end loop;
-      end if;
-
-    end send_frame_1g;
+    -- procedure send_frame_1g (current_frame : in natural) is
+    --   variable current_col   : natural := 0;  -- Column counter within frame
+    --   variable fcs           : std_logic_vector(31 downto 0);
+    -- begin
+    --
+    --   wait until gmii_rx_clk'event and gmii_rx_clk = '1';
+    --
+    --   -- Reset the FCS calculation
+    --   fcs         := (others => '0');
+    --
+    --   -- Adding the preamble field
+    --   for j in 0 to 7 loop
+    --     gmii_rxd   <= "01010101" after dly;
+    --     gmii_rx_dv <= '1' after dly;
+    --     gmii_rx_er <= '0' after dly;
+    --     wait until gmii_rx_clk'event and gmii_rx_clk = '1';
+    --   end loop;
+    --
+    --   -- Adding the Start of Frame Delimiter (SFD)
+    --   gmii_rxd   <= "11010101" after dly;
+    --   gmii_rx_dv <= '1' after dly;
+    --   wait until gmii_rx_clk'event and gmii_rx_clk = '1';
+    --
+    --   current_col := 0;
+    --   gmii_rxd     <= to_stdlogicvector(frame_data(current_frame).columns(current_col).data) after dly;
+    --   gmii_rx_dv   <= to_stdUlogic(frame_data(current_frame).columns(current_col).valid) after dly;
+    --   gmii_rx_er   <= to_stdUlogic(frame_data(current_frame).columns(current_col).error) after dly;
+    --   fcs          := calc_crc(to_stdlogicvector(frame_data(current_frame).columns(current_col).data), fcs);
+    --
+    --   wait until gmii_rx_clk'event and gmii_rx_clk = '1';
+    --
+    --   current_col := current_col + 1;
+    --   -- loop over columns in frame.
+    --   while frame_data(current_frame).columns(current_col).valid /= '0' loop
+    --     -- send one column of data
+    --     gmii_rxd   <= to_stdlogicvector(frame_data(current_frame).columns(current_col).data) after dly;
+    --     gmii_rx_dv <= to_stdUlogic(frame_data(current_frame).columns(current_col).valid) after dly;
+    --     gmii_rx_er   <= to_stdUlogic(frame_data(current_frame).columns(current_col).error) after dly;
+    --     fcs          := calc_crc(to_stdlogicvector(frame_data(current_frame).columns(current_col).data), fcs);
+    --
+    --     current_col := current_col + 1;
+    --     wait until gmii_rx_clk'event and gmii_rx_clk = '1';  -- wait for next clock tick
+    --
+    --   end loop;
+    --
+    --   -- Send the CRC.
+    --   for j in 0 to 3 loop
+    --      gmii_rxd   <= fcs(((8*j)+7) downto (8*j)) after dly;
+    --      gmii_rx_dv <= '1' after dly;
+    --      gmii_rx_er <= '0' after dly;
+    --      wait until gmii_rx_clk'event and gmii_rx_clk = '1';  -- wait for next clock tick
+    --   end loop;
+    --
+    --   if (test_half_duplex = '1') then
+    --     -- Extend to slot time
+    --     if current_frame = 0 then
+    --       for j in 0 to ((512 -4) - current_col) loop
+    --         gmii_rxd   <= "00001111" after dly;
+    --         gmii_rx_dv <= '0' after dly;
+    --         gmii_rx_er <= '1' after dly;
+    --         wait until gmii_rx_clk'event and gmii_rx_clk = '1';
+    --       end loop;
+    --     elsif current_frame = 3 then
+    --       gmii_rxd   <= (others => '0') after dly;
+    --       gmii_rx_dv <= '0' after dly;
+    --       gmii_rx_er <= '0' after dly;
+    --       for j in 0 to 7 loop
+    --         wait until gmii_rx_clk'event and gmii_rx_clk = '1';
+    --       end loop;
+    --     else
+    --       for j in 0 to 11 loop
+    --         gmii_rxd   <= "00001111" after dly;
+    --         gmii_rx_dv <= '0' after dly;
+    --         gmii_rx_er <= '1' after dly;
+    --         wait until gmii_rx_clk'event and gmii_rx_clk = '1';
+    --       end loop;
+    --     end if;
+    --   else
+    --     -- Clear the data lines.
+    --     gmii_rxd   <= (others => '0') after dly;
+    --     gmii_rx_dv <=  '0' after dly;
+    --
+    --     -- Adding the minimum Interframe gap for a receiver (8 idles)
+    --     for j in 0 to 7 loop
+    --       wait until gmii_rx_clk'event and gmii_rx_clk = '1';
+    --     end loop;
+    --   end if;
+    --
+    -- end send_frame_1g;
 
 
     ---------------------------------------------------------------
@@ -1399,21 +1398,21 @@ begin
     -- 1 Gb/s speed
     -------------------------------------------------------
     -- Wait for the Management MDIO transaction to finish.
-    wait until management_config_finished;
+    -- wait until management_config_finished;
     -- Wait for the internal resets to settle
-    wait for 800 ns;
-
-    assert false
-      report "Sending four frames at 1Gb/s..." & cr
-      severity note;
-
-    for current_frame in frame_data'low to frame_data'high loop
-      send_frame_1g(current_frame);
-    end loop;
-
-    -- Wait for 1G monitor process to complete.
-    wait until tx_monitor_finished_1G;
-    wait for 100 ns;
+    -- wait for 800 ns;
+    --
+    -- assert false
+    --   report "Sending four frames at 1Gb/s..." & cr
+    --   severity note;
+    --
+    -- for current_frame in frame_data'low to frame_data'high loop
+    --   send_frame_1g(current_frame);
+    -- end loop;
+    --
+    -- -- Wait for 1G monitor process to complete.
+    -- wait until tx_monitor_finished_1G;
+    -- wait for 100 ns;
 
     -------------------------------------------------------
     -- 100 Mb/s speed
@@ -1433,39 +1432,39 @@ begin
 
     wait for 100 ns;
 
-    -------------------------------------------------------
-    -- 10 Mb/s speed
-    -------------------------------------------------------
-    -- Wait for the Management MDIO transaction to finish.
-    wait until management_config_finished;
-    assert false
-      report "Sending four frames at 10Mb/s..." & cr
-      severity note;
-
-    for current_frame in frame_data'low to frame_data'high loop
-      send_frame_10_100m(current_frame);
-    end loop;
-
-    -- Wait for 100M monitor process to complete.
-    wait until tx_monitor_finished_10M;
-
-    wait for 100 ns;
+    -- -------------------------------------------------------
+    -- -- 10 Mb/s speed
+    -- -------------------------------------------------------
+    -- -- Wait for the Management MDIO transaction to finish.
+    -- wait until management_config_finished;
+    -- assert false
+    --   report "Sending four frames at 10Mb/s..." & cr
+    --   severity note;
+    --
+    -- for current_frame in frame_data'low to frame_data'high loop
+    --   send_frame_10_100m(current_frame);
+    -- end loop;
+    --
+    -- -- Wait for 100M monitor process to complete.
+    -- wait until tx_monitor_finished_10M;
+    --
+    -- wait for 100 ns;
 
     -------------------------------------------------------
     -- 1 Gb/s speed
     -------------------------------------------------------
     -- Wait for the Management MDIO transaction to finish.
-    wait until management_config_finished;
-    assert false
-      report "Sending four frames at 1Gb/s..." & cr
-      severity note;
-
-    for current_frame in frame_data'low to frame_data'high loop
-      send_frame_1g(current_frame);
-    end loop;
-
-    -- Wait for 1G monitor process to complete.
-    wait until tx_monitor_finished_1G;
+    -- wait until management_config_finished;
+    -- assert false
+    --   report "Sending four frames at 1Gb/s..." & cr
+    --   severity note;
+    --
+    -- for current_frame in frame_data'low to frame_data'high loop
+    --   send_frame_1g(current_frame);
+    -- end loop;
+    --
+    -- -- Wait for 1G monitor process to complete.
+    -- wait until tx_monitor_finished_1G;
     rx_stimulus_finished <= true;
 
     -- Our work here is done
@@ -1486,87 +1485,87 @@ begin
     ---------------------------------------------------
     -- Procedure to check a transmitted frame at 1Gb/s
     ---------------------------------------------------
-    procedure check_frame_1g (current_frame : in natural) is
-      variable current_col   : natural := 0;  -- Column counter within frame
-      variable fcs           : std_logic_vector(31 downto 0);
-    begin
-
-      -- Reset the FCS calculation
-      fcs         := (others => '0');
-
-      -- Parse over the preamble field
-      while gmii_tx_en /= '1' or gmii_txd = "01010101" loop
-        wait until gmii_tx_clk'event and gmii_tx_clk = '1';
-      end loop;
-
-      -- Start comparing transmitted dat to received data
-      assert false
-        report "Comparing Transmitted Data Frames to Received Data Frames" & cr
-        severity note;
-
-      -- Parse over the Start of Frame Delimiter (SFD)
-      if (gmii_txd /= "11010101") then
-        assert false
-          report "SFD not present" & cr
-          severity error;
-      end if;
-      wait until gmii_tx_clk'event and gmii_tx_clk = '1';
-
-      -- frame has started, loop over columns of frame
-      while ((frame_data(current_frame).columns(current_col).valid)='1') loop
-
-          assert (gmii_tx_en = to_stdulogic(frame_data(current_frame).columns(current_col).valid))
-            report "gmii_tx_en incorrect" & cr
-            severity error;
-
-          if gmii_tx_en = '1' then
-
-            -- The transmitted Destination Address was the Source Address of the injected frame
-            if current_col < 6 then
-              assert (gmii_txd(7 downto 0) =
-                    to_stdlogicvector(frame_data(current_frame).columns(current_col+6).data(7 downto 0)))
-                report "gmii_txd incorrect" & cr
-                severity error;
-
-            -- The transmitted Source Address was the Destination Address of the injected frame
-            elsif current_col >= 6 and current_col < 12 then
-              assert (gmii_txd(7 downto 0) =
-                    to_stdlogicvector(frame_data(current_frame).columns(current_col-6).data(7 downto 0)))
-                report "gmii_txd incorrect" & cr
-                severity error;
-
-            -- for remainder of frame
-            else
-              assert (gmii_txd(7 downto 0) =
-                    to_stdlogicvector(frame_data(current_frame).columns(current_col).data(7 downto 0)))
-                report "gmii_txd incorrect" & cr
-                severity error;
-            end if;
-        end if;
-
-        -- calculate expected crc for the frame
-        fcs        := calc_crc(gmii_txd, fcs);
-
-        -- wait for next column of data
-        current_col        := current_col + 1;
-        wait until gmii_tx_clk'event and gmii_tx_clk = '1';
-      end loop;  -- while data valid
-
-      -- Check the FCS matches that expected from calculation
-      -- Having checked all data columns, txd must contain FCS.
-      for j in 0 to 3 loop
-        assert (gmii_tx_en = '1')
-          report "gmii_tx_en incorrect during FCS field"  & cr
-          severity error;
-
-        assert (gmii_txd = fcs(((8*j)+7) downto (8*j)))
-          report "gmii_txd incorrect during FCS field"  & cr
-          severity error;
-
-        wait until gmii_tx_clk'event and gmii_tx_clk = '1';
-      end loop;  -- j
-
-    end check_frame_1g;
+    -- procedure check_frame_1g (current_frame : in natural) is
+    --   variable current_col   : natural := 0;  -- Column counter within frame
+    --   variable fcs           : std_logic_vector(31 downto 0);
+    -- begin
+    --
+    --   -- Reset the FCS calculation
+    --   fcs         := (others => '0');
+    --
+    --   -- Parse over the preamble field
+    --   while gmii_tx_en /= '1' or gmii_txd = "01010101" loop
+    --     wait until gmii_tx_clk'event and gmii_tx_clk = '1';
+    --   end loop;
+    --
+    --   -- Start comparing transmitted dat to received data
+    --   assert false
+    --     report "Comparing Transmitted Data Frames to Received Data Frames" & cr
+    --     severity note;
+    --
+    --   -- Parse over the Start of Frame Delimiter (SFD)
+    --   if (gmii_txd /= "11010101") then
+    --     assert false
+    --       report "SFD not present" & cr
+    --       severity error;
+    --   end if;
+    --   wait until gmii_tx_clk'event and gmii_tx_clk = '1';
+    --
+    --   -- frame has started, loop over columns of frame
+    --   while ((frame_data(current_frame).columns(current_col).valid)='1') loop
+    --
+    --       assert (gmii_tx_en = to_stdulogic(frame_data(current_frame).columns(current_col).valid))
+    --         report "gmii_tx_en incorrect" & cr
+    --         severity error;
+    --
+    --       if gmii_tx_en = '1' then
+    --
+    --         -- The transmitted Destination Address was the Source Address of the injected frame
+    --         if current_col < 6 then
+    --           assert (gmii_txd(7 downto 0) =
+    --                 to_stdlogicvector(frame_data(current_frame).columns(current_col+6).data(7 downto 0)))
+    --             report "gmii_txd incorrect" & cr
+    --             severity error;
+    --
+    --         -- The transmitted Source Address was the Destination Address of the injected frame
+    --         elsif current_col >= 6 and current_col < 12 then
+    --           assert (gmii_txd(7 downto 0) =
+    --                 to_stdlogicvector(frame_data(current_frame).columns(current_col-6).data(7 downto 0)))
+    --             report "gmii_txd incorrect" & cr
+    --             severity error;
+    --
+    --         -- for remainder of frame
+    --         else
+    --           assert (gmii_txd(7 downto 0) =
+    --                 to_stdlogicvector(frame_data(current_frame).columns(current_col).data(7 downto 0)))
+    --             report "gmii_txd incorrect" & cr
+    --             severity error;
+    --         end if;
+    --     end if;
+    --
+    --     -- calculate expected crc for the frame
+    --     fcs        := calc_crc(gmii_txd, fcs);
+    --
+    --     -- wait for next column of data
+    --     current_col        := current_col + 1;
+    --     wait until gmii_tx_clk'event and gmii_tx_clk = '1';
+    --   end loop;  -- while data valid
+    --
+    --   -- Check the FCS matches that expected from calculation
+    --   -- Having checked all data columns, txd must contain FCS.
+    --   for j in 0 to 3 loop
+    --     assert (gmii_tx_en = '1')
+    --       report "gmii_tx_en incorrect during FCS field"  & cr
+    --       severity error;
+    --
+    --     assert (gmii_txd = fcs(((8*j)+7) downto (8*j)))
+    --       report "gmii_txd incorrect during FCS field"  & cr
+    --       severity error;
+    --
+    --     wait until gmii_tx_clk'event and gmii_tx_clk = '1';
+    --   end loop;  -- j
+    --
+    -- end check_frame_1g;
 
 
     --------------------------------------------------------
@@ -1703,42 +1702,42 @@ begin
     -- 1 Gb/s speed
     -------------------------------------------------------
 
-    current_frame      := 0;
-    
+    -- current_frame      := 0;
+    --
+    --
+    -- -- Look for 1Gb/s frames.
+    -- -- loop over all the frames in the stimulus record
+    -- loop
+    --
+    --   -- If the current frame had an error inserted then it would have been
+    --   -- dropped by the FIFO in the design example.  Therefore move immediately
+    --   -- on to the next frame.
+    --   while frame_data(current_frame).bad_frame loop
+    --     current_frame := current_frame + 1;
+    --   if current_frame = frame_data'high + 1 then
+    --       exit;
+    --     end if;
+    --   end loop;
+    --
+    --   -- There are only 4 frames in this test.
+    --   if current_frame = frame_data'high + 1 then
+    --     exit;
+    --   end if;
 
-    -- Look for 1Gb/s frames.
-    -- loop over all the frames in the stimulus record
-    loop
+      -- -- Check the current frame
+      -- check_frame_1g(current_frame);
 
-      -- If the current frame had an error inserted then it would have been
-      -- dropped by the FIFO in the design example.  Therefore move immediately
-      -- on to the next frame.
-      while frame_data(current_frame).bad_frame loop
-        current_frame := current_frame + 1;
-      if current_frame = frame_data'high + 1 then
-          exit;
-        end if;
-      end loop;
-
-      -- There are only 4 frames in this test.
-      if current_frame = frame_data'high + 1 then
-        exit;
-      end if;
-
-      -- Check the current frame
-      check_frame_1g(current_frame);
-
-      -- move to the next frame
-      if current_frame = frame_data'high then
-        exit;
-      else
-        current_frame := current_frame + 1;
-      end if;
-
-    end loop;
-
-    wait for 200 ns;
-    tx_monitor_finished_1G <= true;
+    --   -- move to the next frame
+    --   if current_frame = frame_data'high then
+    --     exit;
+    --   else
+    --     current_frame := current_frame + 1;
+    --   end if;
+    --
+    -- end loop;
+    --
+    -- wait for 200 ns;
+    -- tx_monitor_finished_1G <= true;
 
     -------------------------------------------------------
     -- 100 Mb/s speed
@@ -1784,81 +1783,81 @@ begin
     -- 10 Mb/s speed
     -------------------------------------------------------
 
-    current_frame      := 0;
-
-    -- Look for 10Mb/s frames.
-    -- loop over all the frames in the stimulus vector
-    loop
-
-      -- If the current frame had an error inserted then it would have been
-      -- dropped by the FIFO in the design example.  Therefore move immediately
-      -- on to the next frame.
-      while frame_data(current_frame).bad_frame loop
-        current_frame := current_frame + 1;
-        if current_frame = frame_data'high + 1 then
-          exit;
-        end if;
-      end loop;
-
-      -- There are only 4 frames in this test.
-      if current_frame = frame_data'high + 1 then
-        exit;
-      end if;
-
-      -- Check the current frame
-      check_frame_10_100m(current_frame);
-
-      -- move to the next frame
-      if current_frame = frame_data'high then
-        exit;
-      else
-        current_frame := current_frame + 1;
-      end if;
-
-    end loop;
-    wait for 200 ns;
-    tx_monitor_finished_10M <= true;
-
-    -------------------------------------------------------
-    -- 1 Gb/s speed
-    -------------------------------------------------------
-
-    current_frame      := 0;
-
-    -- Look for 1Gb/s frames.
-    -- loop over all the frames in the stimulus record
-    loop
-
-      -- If the current frame had an error inserted then it would have been
-      -- dropped by the FIFO in the design example.  Therefore move immediately
-      -- on to the next frame.
-      while frame_data(current_frame).bad_frame loop
-        current_frame := current_frame + 1;
-      if current_frame = frame_data'high + 1 then
-          exit;
-        end if;
-      end loop;
-
-      -- There are only 4 frames in this test.
-      if current_frame = frame_data'high + 1 then
-        exit;
-      end if;
-
-      -- Check the current frame
-      check_frame_1g(current_frame);
-
-      -- move to the next frame
-      if current_frame = frame_data'high then
-        exit;
-      else
-        current_frame := current_frame + 1;
-      end if;
-
-    end loop;
-
-    wait for 200 ns;
-    tx_monitor_finished_1G <= true;
-
+    -- current_frame      := 0;
+    --
+    -- -- Look for 10Mb/s frames.
+    -- -- loop over all the frames in the stimulus vector
+    -- loop
+    --
+    --   -- If the current frame had an error inserted then it would have been
+    --   -- dropped by the FIFO in the design example.  Therefore move immediately
+    --   -- on to the next frame.
+    --   while frame_data(current_frame).bad_frame loop
+    --     current_frame := current_frame + 1;
+    --     if current_frame = frame_data'high + 1 then
+    --       exit;
+    --     end if;
+    --   end loop;
+    --
+    --   -- There are only 4 frames in this test.
+    --   if current_frame = frame_data'high + 1 then
+    --     exit;
+    --   end if;
+    --
+    --   -- Check the current frame
+    --   check_frame_10_100m(current_frame);
+    --
+    --   -- move to the next frame
+    --   if current_frame = frame_data'high then
+    --     exit;
+    --   else
+    --     current_frame := current_frame + 1;
+    --   end if;
+    --
+    -- end loop;
+    -- wait for 200 ns;
+    -- tx_monitor_finished_10M <= true;
+    --
+    -- -------------------------------------------------------
+    -- -- 1 Gb/s speed
+    -- -------------------------------------------------------
+    --
+    -- current_frame      := 0;
+    --
+    -- -- Look for 1Gb/s frames.
+    -- -- loop over all the frames in the stimulus record
+    -- loop
+    --
+    --   -- If the current frame had an error inserted then it would have been
+    --   -- dropped by the FIFO in the design example.  Therefore move immediately
+    --   -- on to the next frame.
+    --   while frame_data(current_frame).bad_frame loop
+    --     current_frame := current_frame + 1;
+    --   if current_frame = frame_data'high + 1 then
+    --       exit;
+    --     end if;
+    --   end loop;
+    --
+    --   -- There are only 4 frames in this test.
+    --   if current_frame = frame_data'high + 1 then
+    --     exit;
+    --   end if;
+    --
+    --   -- Check the current frame
+    --   check_frame_1g(current_frame);
+    --
+    --   -- move to the next frame
+    --   if current_frame = frame_data'high then
+    --     exit;
+    --   else
+    --     current_frame := current_frame + 1;
+    --   end if;
+    --
+    -- end loop;
+    --
+    -- wait for 200 ns;
+    -- tx_monitor_finished_1G <= true;
+    --
 
     wait;
   end process p_monitor;
@@ -1866,4 +1865,3 @@ begin
 
 
 end behav;
-

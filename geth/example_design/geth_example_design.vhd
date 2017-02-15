@@ -46,7 +46,7 @@
 -- regulations governing limitations on product liability.
 --
 -- THIS COPYRIGHT NOTICE AND DISCLAIMER MUST BE RETAINED AS
--- PART OF THIS FILE AT ALL TIMES. 
+-- PART OF THIS FILE AT ALL TIMES.
 -- ------------------------------------------------------------------------------
 -- Description:  This is the VHDL example design for the Tri-Mode
 --               Ethernet MAC core. It is intended that this example design
@@ -165,6 +165,15 @@ entity geth_example_design is
       host_rd_data         : out std_logic_vector(31 downto 0);
       host_miim_rdy        : out std_logic
 
+     --Write FiFO interface
+     ----------------------
+     tx_ll_clock          : in  std_logic;
+     tx_ll_reset          : in  std_logic;
+     tx_ll_data_in        : in  std_logic_vector(7 downto 0);
+     tx_ll_sof_in_n       : in  std_logic;
+     tx_ll_eof_in_n       : in  std_logic;
+     tx_ll_src_rdy_in_n   : in  std_logic;
+     tx_ll_dst_rdy_out_n  : out std_logic;
 
       );
 end geth_example_design;
@@ -305,8 +314,8 @@ architecture wrapper of geth_example_design is
 
   signal tx_clk_int        : std_logic;      -- Internal Tx core clock signal.
   signal rx_clk_int        : std_logic;      -- Internal Rx core clock signal
-  
-  
+
+
   signal refclk_bufg       : std_logic;      -- refclk routed through a BUFG.
   signal rx_enable_int     : std_logic;      -- Rx clock enable
   signal tx_enable_int     : std_logic;      -- Tx clock enable
@@ -340,10 +349,10 @@ architecture wrapper of geth_example_design is
   signal rx_statistics_vector_reg : std_logic_vector(27 downto 0);
   signal tx_statistics_valid_reg  : std_logic_vector(31 downto 0);
   signal tx_statistics_vector_reg : std_logic_vector(31 downto 0);
-  
+
   signal pause_val_reg            : std_logic_vector(15 downto 0);
   signal pause_req_reg            : std_logic_vector(15 downto 0);
-  
+
   signal tx_ifg_delay             : std_logic_vector(7 downto 0) := X"00";
 
   attribute keep : string;
@@ -357,17 +366,17 @@ architecture wrapper of geth_example_design is
   signal host_miim_sel_int        : std_logic;
   signal host_req_reg             : std_logic;
   signal host_miim_sel_reg        : std_logic;
-  
+
   attribute keep of host_opcode_reg    : signal is "true";
   attribute keep of host_addr_reg      : signal is "true";
   attribute keep of host_wr_data_reg   : signal is "true";
   attribute keep of host_req_reg       : signal is "true";
   attribute keep of host_miim_sel_reg  : signal is "true";
-  
+
   signal mdio_i                   : std_logic;
   signal mdio_o                   : std_logic;
   signal mdio_t                   : std_logic;
-      
+
 
 begin
 
@@ -384,7 +393,7 @@ begin
       R                     => reset,
       S                     => '0'
    );
-   
+
     tx_clk_ddr : ODDR
     port map (
       Q                     => tx_clk,
@@ -426,7 +435,7 @@ begin
       reset_in       => reset,
       reset_out      => tx_reset
    );
-   
+
   -- Create fully synchronous reset in the LocalLink transmitter clock domain.
   gen_tx_reset : process (tx_clk_int)
   begin
@@ -461,7 +470,7 @@ begin
   -- Infer the IOBUF for MDIO
   ------------------------------------------------------------------------------
   mdio <= 'Z' when mdio_t = '1' else mdio_o;
-  
+
   p_mdio : process(mdio)
   begin
      mdio_i <= mdio;
@@ -543,10 +552,10 @@ begin
       host_miim_sel_int <= host_miim_sel;
     end if;
   end process;
-  
+
   host_req_reg      <= host_req_int;
   host_miim_sel_reg <= host_miim_sel_int;
-  
+
   ------------------------------------------------------------------------------
   -- Instantiate the Tri-Mode EMAC core LocalLink wrapper
   ------------------------------------------------------------------------------
@@ -642,6 +651,12 @@ begin
       rx_ll_src_rdy_out_n   => tx_ll_src_rdy_n,
       rx_ll_dst_rdy_in_n    => tx_ll_dst_rdy_n
     );
+
+   -- Tengo que escribir la fifo de transmision y no hacer ningun loopback
+   -- Tal vez lo que me convega hacer es dejar siempre fijas las MAC destino y fuente,
+   -- los datos que vaya recibiendo tengo que empaquetarlos dentro del los frames MAC.
+   rx_ll_clock <= tx_clk_int;
+
 
 
   -- The Address Swapping Module also implements loopback from Rx FIFO to Tx.
