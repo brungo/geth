@@ -165,15 +165,15 @@ entity geth_example_design is
       host_rd_data         : out std_logic_vector(31 downto 0);
       host_miim_rdy        : out std_logic
 
-     --Write FiFO interface
-     ----------------------
-     tx_ll_clock          : in  std_logic;
-     tx_ll_reset          : in  std_logic;
-     tx_ll_data_in        : in  std_logic_vector(7 downto 0);
-     tx_ll_sof_in_n       : in  std_logic;
-     tx_ll_eof_in_n       : in  std_logic;
-     tx_ll_src_rdy_in_n   : in  std_logic;
-     tx_ll_dst_rdy_out_n  : out std_logic;
+     -- --Write FiFO interface
+     -- ----------------------
+     -- tx_ll_clock_i          : in  std_logic;
+     -- tx_ll_reset_i          : in  std_logic;
+     -- tx_ll_data_in_i        : in  std_logic_vector(7 downto 0);
+     -- tx_ll_sof_in_n_i       : in  std_logic;
+     -- tx_ll_eof_in_n_i       : in  std_logic;
+     -- tx_ll_src_rdy_in_n_i   : in  std_logic;
+     -- tx_ll_dst_rdy_out_n_i  : out std_logic
 
       );
 end geth_example_design;
@@ -270,6 +270,7 @@ architecture wrapper of geth_example_design is
 
       );
    end component;
+
 
 
    -----------------------------------------------------------------------------
@@ -654,8 +655,24 @@ begin
 
    -- Tengo que escribir la fifo de transmision y no hacer ningun loopback
    -- Tal vez lo que me convega hacer es dejar siempre fijas las MAC destino y fuente,
-   -- los datos que vaya recibiendo tengo que empaquetarlos dentro del los frames MAC.
-   rx_ll_clock <= tx_clk_int;
+   -- los datos que vaya recibiendo tengo que empaquetarlos dentro de los frames MAC.
+
+
+-----------------
+--- Conexión de la interfaz de fifo de transmision del ll
+---para sacarla hacia "afuera" y poder manejarla desde el
+---top level.
+
+   -- -- tx_ll_clk Ya está asignado
+   -- -- tx_ll_reset Ya está asignado
+   -- tx_ll_eof_n     <= tx_ll_eof_in_n_i;
+   -- tx_ll_sof_n     <= tx_ll_sof_in_n_i;
+   -- tx_ll_data      <= tx_ll_data_in_i ;
+   -- tx_ll_dst_rdy_out_n_i <= tx_ll_dst_rdy_n;
+   -- tx_ll_src_rdy_n <= tx_ll_src_rdy_in_n_i;
+
+   -- rx_ll_clock <= tx_clk_int;
+   -- rx_ll_reset <= tx_ll_reset;
 
 
 

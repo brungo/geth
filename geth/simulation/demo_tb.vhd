@@ -1312,14 +1312,14 @@ begin
 
       -- Adding the preamble field
       for j in 0 to 15 loop
-        gmii_rxd   <= "00000101" after 30 ns;
+        gmii_rxd   <= x"05" after 30 ns;
         gmii_rx_dv <= '1' after 30 ns;
         gmii_rx_er <= '0' after 30 ns;
         wait until gmii_rx_clk'event and gmii_rx_clk = '1';
       end loop;
 
       -- Adding the Start of Frame Delimiter (SFD)
-      gmii_rxd   <= "00001101" after 30 ns;
+      gmii_rxd   <= x"0D" after 30 ns;
       gmii_rx_dv <= '1' after 30 ns;
       gmii_rx_er <= '0' after 30 ns;
       wait until gmii_rx_clk'event and gmii_rx_clk = '1';
