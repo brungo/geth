@@ -163,17 +163,15 @@ entity geth_example_design is
       host_req             : in  std_logic;
       host_miim_sel        : in  std_logic;
       host_rd_data         : out std_logic_vector(31 downto 0);
-      host_miim_rdy        : out std_logic
+      host_miim_rdy        : out std_logic;
 
-     -- --Write FiFO interface
-     -- ----------------------
-     -- tx_ll_clock_i          : in  std_logic;
-     -- tx_ll_reset_i          : in  std_logic;
-     -- tx_ll_data_in_i        : in  std_logic_vector(7 downto 0);
-     -- tx_ll_sof_in_n_i       : in  std_logic;
-     -- tx_ll_eof_in_n_i       : in  std_logic;
-     -- tx_ll_src_rdy_in_n_i   : in  std_logic;
-     -- tx_ll_dst_rdy_out_n_i  : out std_logic
+     --Write FiFO interface
+     ----------------------
+     tx_ll_data_in_i        : in  std_logic_vector(7 downto 0);
+     tx_ll_sof_in_n_i       : in  std_logic;
+     tx_ll_eof_in_n_i       : in  std_logic;
+     tx_ll_src_rdy_in_n_i   : in  std_logic;
+     tx_ll_dst_rdy_out_n_i  : out std_logic
 
       );
 end geth_example_design;
@@ -270,28 +268,6 @@ architecture wrapper of geth_example_design is
 
       );
    end component;
-
-
-
-   -----------------------------------------------------------------------------
-   --  Component Declaration for address swapping module
-   -----------------------------------------------------------------------------
-   component address_swap_module
-   port (
-      rx_ll_clock          : in  std_logic;
-      rx_ll_reset          : in  std_logic;
-      rx_ll_data_in        : in  std_logic_vector(7 downto 0);
-      rx_ll_sof_in_n       : in  std_logic;
-      rx_ll_eof_in_n       : in  std_logic;
-      rx_ll_src_rdy_in_n   : in  std_logic;
-      rx_ll_data_out       : out std_logic_vector(7 downto 0);
-      rx_ll_sof_out_n      : out std_logic;
-      rx_ll_eof_out_n      : out std_logic;
-      rx_ll_src_rdy_out_n  : out std_logic;
-      rx_ll_dst_rdy_in_n   : in  std_logic
-      );
-   end component;
-
 
   ------------------------------------------------------------------------------
   -- Component declaration for the reset synchroniser
@@ -638,20 +614,20 @@ begin
   ------------------------------------------------------------------------------
   --  Instantiate the address swapping module
   ------------------------------------------------------------------------------
-  client_side_asm : address_swap_module
-    port map (
-      rx_ll_clock           => tx_clk_int,
-      rx_ll_reset           => tx_ll_reset,
-      rx_ll_data_in         => rx_ll_data,
-      rx_ll_sof_in_n        => rx_ll_sof_n,
-      rx_ll_eof_in_n        => rx_ll_eof_n,
-      rx_ll_src_rdy_in_n    => rx_ll_src_rdy_n,
-      rx_ll_data_out        => tx_ll_data,
-      rx_ll_sof_out_n       => tx_ll_sof_n,
-      rx_ll_eof_out_n       => tx_ll_eof_n,
-      rx_ll_src_rdy_out_n   => tx_ll_src_rdy_n,
-      rx_ll_dst_rdy_in_n    => tx_ll_dst_rdy_n
-    );
+  -- client_side_asm : address_swap_module
+  --   port map (
+  --     -- rx_ll_clock           => tx_clk_int,
+  --     -- rx_ll_reset           => tx_ll_reset,
+  --     rx_ll_data_in         => rx_ll_data,
+  --     rx_ll_sof_in_n        => rx_ll_sof_n,
+  --     rx_ll_eof_in_n        => rx_ll_eof_n,
+  --     rx_ll_src_rdy_in_n    => rx_ll_src_rdy_n,
+  --     rx_ll_data_out        => tx_ll_data,
+  --     rx_ll_sof_out_n       => tx_ll_sof_n,
+  --     rx_ll_eof_out_n       => tx_ll_eof_n,
+  --     rx_ll_src_rdy_out_n   => tx_ll_src_rdy_n,
+  --     rx_ll_dst_rdy_in_n    => tx_ll_dst_rdy_n
+  --   );
 
    -- Tengo que escribir la fifo de transmision y no hacer ningun loopback
    -- Tal vez lo que me convega hacer es dejar siempre fijas las MAC destino y fuente,
@@ -663,22 +639,22 @@ begin
 ---para sacarla hacia "afuera" y poder manejarla desde el
 ---top level.
 
-   -- -- tx_ll_clk Ya está asignado
-   -- -- tx_ll_reset Ya está asignado
-   -- tx_ll_eof_n     <= tx_ll_eof_in_n_i;
-   -- tx_ll_sof_n     <= tx_ll_sof_in_n_i;
-   -- tx_ll_data      <= tx_ll_data_in_i ;
-   -- tx_ll_dst_rdy_out_n_i <= tx_ll_dst_rdy_n;
-   -- tx_ll_src_rdy_n <= tx_ll_src_rdy_in_n_i;
+   -- tx_ll_clk Ya está asignado
+   -- tx_ll_reset Ya está asignado
+   tx_ll_eof_n     <= tx_ll_eof_in_n_i;
+   tx_ll_sof_n     <= tx_ll_sof_in_n_i;
+   tx_ll_data      <= tx_ll_data_in_i ;
+   tx_ll_dst_rdy_out_n_i <= tx_ll_dst_rdy_n;
+   tx_ll_src_rdy_n <= tx_ll_src_rdy_in_n_i;
 
-   -- rx_ll_clock <= tx_clk_int;
-   -- rx_ll_reset <= tx_ll_reset;
+   rx_ll_clk <= tx_clk_int;
+   rx_ll_reset <= tx_ll_reset;
 
 
 
-  -- The Address Swapping Module also implements loopback from Rx FIFO to Tx.
-  -- The following assignment completes the loopback:
-  rx_ll_dst_rdy_n <= tx_ll_dst_rdy_n;
+  -- -- The Address Swapping Module also implements loopback from Rx FIFO to Tx.
+  -- -- The following assignment completes the loopback:
+  -- rx_ll_dst_rdy_n <= tx_ll_dst_rdy_n;
 
 
 end wrapper;
