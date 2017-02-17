@@ -1032,14 +1032,33 @@ begin
       report "Timing checks are not valid" & cr
       severity note;
 
-    current_speed <= "01";
+      current_speed <= "10";
 
-    mac_reset;
+      assert false
+         report "Setting speed to 1GHz...." & cr
+         severity note;
+      host_write(emac_config_add, "10000000000000000000000000000000");
 
-    --------------------------------------------------------------------
-    -- Configure the MAC though the Management I/F.
-    --------------------------------------------------------------------
-    configure_mac;
+      -- reset the core
+      mac_reset;
+
+      --------------------------------------------------------------------
+      -- Configure the MAC though the Management I/F.
+      --------------------------------------------------------------------
+      configure_mac;
+       -- Signal that configuration is complete.  Other processes will now
+      -- be allowed to run.
+      management_config_finished <= true;
+
+          --------------------------------------------------------------------
+          -- The stimulus process will now send 4 frames at 1Gb/s.
+          --------------------------------------------------------------------
+
+          -- Wait for 1G monitor process to complete.
+          wait until tx_monitor_finished_1G;
+          management_config_finished <= false;
+
+
 
     --------------------------------------------------------------------
     -- Change the speed to 100Mb/s and send the 4 frames
@@ -1073,6 +1092,23 @@ begin
     wait until tx_monitor_finished_100M;
     management_config_finished <= false;
 
+    --------------------------------------------------------------------
+    -- Change the speed back to 1Gb/s and send the 4 frames
+    --------------------------------------------------------------------
+
+    wait for 10000 ns;
+    assert false
+      report "Timing checks are not valid" & cr
+      severity note;
+
+    assert false
+      report "Setting speed to 1Gb/s...." & cr
+      severity note;
+    current_speed <= "10";
+
+    host_write(emac_config_add, "10000000000000000000000000000000");
+
+
     -- A reset is required after any speed change
     wait for 100 ns;
     mac_reset;
@@ -1083,6 +1119,7 @@ begin
     -- Signal that configuration is complete.  Other processes will now
     -- be allowed to run.
     management_config_finished <= true;
+
 
 
     wait;
@@ -1148,7 +1185,6 @@ begin
 
   begin
 
-
     -------------------------------------------------------
     -- Send four frames through the MAC and Design Exampled
     -- at each state Ethernet speed
@@ -1157,6 +1193,8 @@ begin
     --      -- frame 2 = errored frame
     --      -- frame 3 = padded frame
     -------------------------------------------------------
+
+
 
     -------------------------------------------------------
     -- 100 Mb/s speed
@@ -1182,6 +1220,29 @@ begin
     assert false
       report "Simulation stopped"
       severity failure;
+
+      -------------------------------------------------------
+      -- 1 Gb/s speed
+      -------------------------------------------------------
+      -- Wait for the Management MDIO transaction to finish.
+      wait until management_config_finished;
+      assert false
+        report "Sending four frames at 1Gb/s..." & cr
+        severity note;
+
+      for current_frame in frame_data'low to frame_data'high loop
+        send_locallink_frame(current_frame);
+      end loop;
+
+      -- Wait for 1G monitor process to complete.
+      wait until tx_monitor_finished_1G;
+      rx_stimulus_finished <= true;
+
+      -- Our work here is done
+      assert false
+        report "Simulation stopped"
+        severity failure;
+
   end process p_stimulus;
 
 
