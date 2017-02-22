@@ -29,8 +29,6 @@ There are at leaest four independent clock sources needed.
 
 #### Using the example ####
 
-Ejemplo sencillo para utilizar con la placa de evaluación Xilinx ML605, suponiendo
-que solamente se va a utilizar para enviar datos.
- Cuenta con el core MAC Ethernet, GMII handler, rx & tx fifo controller y generadores
-de reset y clocks necesarios para el funcionamiento de los anteriores.
- El uso básico del ejemplo consta en escribir datos en la FIFO de entrada, 
+Simple Xilinx ML605 Ethernet example, it's made only for data transmission.
+It instatiates MAC Ethernet, GMII handler, rx & tx fifo controllers core,
+reset and clocks generators required for a correct operation.
