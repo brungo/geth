@@ -108,7 +108,7 @@ use ieee.numeric_std.all;
 -- The entity declaration for the example_design level wrapper.
 --------------------------------------------------------------------------------
 
-entity geth_example_design is
+entity geth_wrapper is
     port(
       -- asynchronous reset
       reset                : in  std_logic;
@@ -180,11 +180,28 @@ entity geth_example_design is
     rx_ll_src_rdy_out_n_o  : out std_logic;
     rx_ll_dst_rdy_in_n_i   : in  std_logic
       );
-end geth_example_design;
+end geth_wrapper;
 
 
 
-architecture wrapper of geth_example_design is
+architecture wrapper of geth_wrapper is
+
+ ------------------------------------------------------------------------------
+ -- External modules Instantiation
+ ------------------------------------------------------------------------------
+ clknetwork : entity work.clock_gen
+ port map
+  (-- Clock in ports
+   CLK_IN1            => refclk_i  ,
+   -- Clock out ports
+   CLK_OUT1           => gtx_clk   ,   ---125MHz
+   CLK_OUT2           => host_clk,   ---125MHz/3
+   CLK_OUT3           => refclk    ,   ---200MHz
+   -- Status and control signals
+   RESET              => reset_i   ,
+   LOCKED             => locked_int);
+   ----------------------------------------
+
 
 
   ------------------------------------------------------------------------------
@@ -292,14 +309,10 @@ architecture wrapper of geth_example_design is
   ------------------------------------------------------------------------------
   -- internal signals used in this example_design level wrapper.
   ------------------------------------------------------------------------------
-
-  signal host_clk_bufg     : std_logic;      -- host_clk routed through a BUFG.
-
   signal tx_clk_int        : std_logic;      -- Internal Tx core clock signal.
   signal rx_clk_int        : std_logic;      -- Internal Rx core clock signal
 
 
-  signal refclk_bufg       : std_logic;      -- refclk routed through a BUFG.
   signal rx_enable_int     : std_logic;      -- Rx clock enable
   signal tx_enable_int     : std_logic;      -- Tx clock enable
 
@@ -387,20 +400,6 @@ begin
       R                     => reset,
       S                     => '0'
    );
-
-
-  ------------------------------------------------------------------------------
-  -- HOST Clock logic
-  ------------------------------------------------------------------------------
-
-  -- Route the host clock input through a BUFG onto Global Clock Routing
-  bufg_host_clk  : BUFG  port map (I => host_clk, O => host_clk_bufg);
-
-
-  ------------------------------------------------------------------------------
-  -- REFCLK used for IODELAYCTRL primitive : Need to supply a 200MHz clock
-  ------------------------------------------------------------------------------
-  refclk_bufg_i  : BUFG  port map(I => refclk, O => refclk_bufg);
 
 
   -----------------------------------------------------------------------------
@@ -525,9 +524,9 @@ begin
   -- the host interface signals are registered before being used
   ------------------------------------------------------------------------------
 
-  register_host_interface : process(host_clk_bufg)
+  register_host_interface : process(host_clk)
   begin
-    if (host_clk_bufg'event and host_clk_bufg = '1') then
+    if (host_clk'event and host_clk = '1') then
       host_opcode_reg   <= host_opcode;
       host_addr_reg     <= host_addr;
       host_wr_data_reg  <= host_wr_data;
@@ -548,7 +547,7 @@ begin
       reset                 => reset,
 
       -- Reference clock for IDELAYCTRL's
-      refclk                => refclk_bufg,
+      refclk                => refclk,
 
       -- Client Receiver Statistics Interface
       rx_clk                => rx_clk_int,
@@ -606,7 +605,7 @@ begin
       mdio_t                => mdio_t,
 
       -- Host Interface
-      host_clk              => host_clk_bufg,
+      host_clk              => host_clk,
       host_opcode           => host_opcode_reg,
       host_addr             => host_addr_reg,
       host_wr_data          => host_wr_data_reg,
@@ -615,7 +614,6 @@ begin
       host_req              => host_req_reg,
       host_miim_rdy         => host_miim_rdy
     );
-
 
 -----------------
 --- Conexión de la interfaz de fifo de transmision del ll
@@ -629,6 +627,8 @@ begin
    tx_ll_data      <= tx_ll_data_in_i ;
    tx_ll_dst_rdy_out_n_i <= tx_ll_dst_rdy_n;
    tx_ll_src_rdy_n <= tx_ll_src_rdy_in_n_i;
+
+
 
    rx_ll_data_out_o      <= rx_ll_data     ;
    rx_ll_sof_out_n_o     <= rx_ll_sof_n    ;

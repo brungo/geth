@@ -87,14 +87,14 @@
 --     |  |                 |    | CORE         |   |                  |
 --     |  |                 |    |              |   |                  |
 --     |  | DATA TX ------->|--->|          Tx  |--------> Frames      |
---     |  | FRAMES          |    |          PHY |   |      Transmitted |
---     |  |                 |    |          I/F |   |                  |
---     |  |                 |    |              |   |                  |
---     |  |                 |    |              |   |                  |
---     |  |                 |    |              |   |                  |
---     |  |                 |    |          Rx  |   |                  |
---     |  |                 |    |          PHY |   |                  |
---     |  |                 |<---|          I/F |<--------             |
+--     |  | FRAMES          |    |          PHY |   |     | Transmitted|
+--     |  |                 |    |          I/F |   |     |            |
+--     |  |                 |    |              |   |     |            |
+--     |  |                 |    |              |   |     |            |
+--     |  |                 |    |              |   |     | Loopback   |
+--     |  |                 |    |          Rx  |   |     |            |
+--     |  | DATA RX< -------|    |          PHY |   |     |            |
+--     |  | FRAMES          |<---|          I/F |<--------             |
 --     |  |                 |    |              |   |                  |
 --     |  -------------------    ----------------   |                  |
 --     --------------------------------^-------------                  |
@@ -183,7 +183,13 @@ architecture behav of testbench is
       tx_ll_sof_in_n_i       : in  std_logic;
       tx_ll_eof_in_n_i       : in  std_logic;
       tx_ll_src_rdy_in_n_i   : in  std_logic;
-      tx_ll_dst_rdy_out_n_i  : out std_logic
+      tx_ll_dst_rdy_out_n_i  : out std_logic;
+
+      rx_ll_data_out_o       : out std_logic_vector(7 downto 0);
+      rx_ll_sof_out_n_o      : out std_logic;
+      rx_ll_eof_out_n_o      : out std_logic;
+      rx_ll_src_rdy_out_n_o  : out std_logic;
+      rx_ll_dst_rdy_in_n_i   : in  std_logic
 
       );
   end component;
@@ -520,6 +526,8 @@ architecture behav of testbench is
       -- No error in this frame
       bad_frame => false));
 
+  type data_rec is array (0 to 64) of std_logic_vector(7 downto 0);
+  signal received_data : data_rec;
 
   ------------------------------------------------------------------------------
   -- Test Bench signals and constants
@@ -528,7 +536,7 @@ architecture behav of testbench is
   -- Delay to provide setup and hold timing at the GMII/RGMII.
   constant dly : time := 5.8 ns;
   -- testbench signals
-  signal reset                : std_logic                     := '1';             -- start in reset
+  signal reset                : std_logic:= '1';             -- start in reset
   signal tx_clk               : std_logic;
   signal tx_statistics_vector : std_logic;
   signal tx_statistics_valid  : std_logic;
@@ -575,6 +583,12 @@ architecture behav of testbench is
   signal ll_src_rdy           : std_logic := '1';
   signal ll_dst_rdy           : std_logic := '1';
 
+  signal rx_ll_data           : std_logic_vector(7 downto 0) := (others => '0');
+  signal rx_ll_sof            : std_logic;
+  signal rx_ll_eof            : std_logic;
+  signal rx_ll_src_rdy        : std_logic;
+  signal rx_ll_dst_rdy        : std_logic := '0';
+
   -- testbench control signals
   signal current_speed              : std_logic_vector(1 downto 0) := "10";
   signal tx_monitor_finished_1G     : boolean := false;
@@ -615,17 +629,17 @@ begin
       pause_val            => pause_val,
 
       -- GMII Interface
-      gtx_clk              => gtx_clk,
-      gmii_txd             => gmii_txd,
+      gtx_clk              => gtx_clk   ,
+      gmii_txd             => gmii_txd  ,
       gmii_tx_en           => gmii_tx_en,
       gmii_tx_er           => gmii_tx_er,
       gmii_tx_clk          => gmii_tx_clk,
-      gmii_rxd             => gmii_rxd,
-      gmii_rx_dv           => gmii_rx_dv,
+      gmii_rxd             => gmii_txd  ,
+      gmii_rx_dv           => gmii_tx_en,
       gmii_rx_er           => gmii_rx_er,
       gmii_rx_clk          => gmii_rx_clk,
-      gmii_crs             => gmii_crs,
-      gmii_col             => gmii_col,
+      gmii_crs             => gmii_crs  ,
+      gmii_col             => gmii_col  ,
       mii_tx_clk           => mii_tx_clk,
 
       -- MDIO Interface
@@ -649,17 +663,24 @@ begin
       tx_ll_sof_in_n_i      => ll_sof    ,
       tx_ll_eof_in_n_i      => ll_eof    ,
       tx_ll_src_rdy_in_n_i  => ll_src_rdy,
-      tx_ll_dst_rdy_out_n_i => ll_dst_rdy
+      tx_ll_dst_rdy_out_n_i => ll_dst_rdy,
+
+     --Read FiFO interface
+     rx_ll_data_out_o       => rx_ll_data   ,--: out std_logic_vector(7 downto 0);
+     rx_ll_sof_out_n_o      => rx_ll_sof    ,--: out std_logic;
+     rx_ll_eof_out_n_o      => rx_ll_eof    ,--: out std_logic;
+     rx_ll_src_rdy_out_n_o  => rx_ll_src_rdy,--: out std_logic;
+     rx_ll_dst_rdy_in_n_i   => rx_ll_dst_rdy--: in  std_logic
     );
 
 
   ------------------------------------------------------------------------------
-  -- If the simulation is still going after 500 us
+  -- If the simulation is still going after 10 us
   -- then something has gone wrong: terminate with an error
   ------------------------------------------------------------------------------
   p_timebomb : process
   begin
-    wait for 550 us;
+    wait for 10 us;
     assert false
       report "ERROR - Simulation running forever!"
       severity failure;
@@ -846,7 +867,6 @@ begin
   -- end of transmission
   -----------------------------------------------------------------------------
   p_management : process
-
     ------------------------------
     -- Procedure to reset the MAC
     ------------------------------
@@ -861,8 +881,6 @@ begin
 
       reset <= '0';
       wait for 1000 ns;
-
-      wait for 100 ns;
 
       assert false
         report "Timing checks are valid" & cr
@@ -916,55 +934,6 @@ begin
       rd_data               := host_rd_data;
     end procedure host_read;
 
-    ---------------------------------------------------
-    -- Procedure to perform an MDIO Configuration Write
-    ---------------------------------------------------
-    procedure p_mdio_write(phy_addr: in std_logic_vector(4 downto 0);
-                         reg_addr  : in std_logic_vector(4 downto 0);
-                         wr_data   : in std_logic_vector(15 downto 0)) is
-    begin
-      wait until host_clk'event and host_clk = '0';
-      host_addr(9 downto 0) <= phy_addr & reg_addr;
-      host_miim_sel         <= '1';
-      host_opcode           <= "01";
-      host_req              <= '1';
-      host_wr_data          <= X"0000" & wr_data;
-      wait until host_clk'event and host_clk = '0';
-      host_addr(9 downto 0) <= (others => '0');
-      host_miim_sel         <= '1';
-      host_opcode           <= "11";
-      host_req              <= '0';
-      host_wr_data          <= (others => '0');
-      wait until host_clk'event and host_clk = '0';
-      wait until host_miim_rdy'event and host_miim_rdy = '1';
-    end procedure p_mdio_write;
-
-
-    --------------------------------------------------
-    -- Procedure to perform an MDIO Configuration Read
-    -- An extra cycle is required as the example design
-    -- has an extra pipeline delay
-    --------------------------------------------------
-    procedure p_mdio_read(phy_addr: in std_logic_vector(4 downto 0);
-                        reg_addr  : in std_logic_vector(4 downto 0);
-                        rd_data   : out std_logic_vector(31 downto 0)) is
-    begin
-      wait until host_clk'event and host_clk = '0';
-      host_addr(9 downto 0) <= phy_addr & reg_addr;
-      host_miim_sel         <= '1';
-      host_opcode           <= "10";
-      host_req              <= '1';
-      wait until host_clk'event and host_clk = '0';
-      host_addr(9 downto 0) <= (others => '0');
-      host_miim_sel         <= '1';
-      host_opcode           <= "11";
-      host_req              <= '0';
-      wait until host_clk'event and host_clk = '0';
-      wait until host_miim_rdy'event and host_miim_rdy = '1';
-      wait until host_clk'event and host_clk = '0';
-      wait until host_clk'event and host_clk = '1';
-      rd_data               := host_rd_data;
-    end procedure p_mdio_read;
 
     procedure configure_mac is
     begin
@@ -1023,22 +992,16 @@ begin
         host_write(transmitter_add, x"14000000");
         host_write(receiver_add,    x"14000000");
       end if;
-
       end procedure configure_mac;
 
 
   begin  -- process p_management
-  assert false
-      report "Timing checks are not valid" & cr
-      severity note;
 
       current_speed <= "10";
-
       assert false
          report "Setting speed to 1GHz...." & cr
          severity note;
       host_write(emac_config_add, "10000000000000000000000000000000");
-
       -- reset the core
       mac_reset;
 
@@ -1046,84 +1009,17 @@ begin
       -- Configure the MAC though the Management I/F.
       --------------------------------------------------------------------
       configure_mac;
-       -- Signal that configuration is complete.  Other processes will now
+      -- Signal that configuration is complete.  Other processes will now
       -- be allowed to run.
       management_config_finished <= true;
 
-          --------------------------------------------------------------------
-          -- The stimulus process will now send 4 frames at 1Gb/s.
-          --------------------------------------------------------------------
+      --------------------------------------------------------------------
+      -- The stimulus process will now send 4 frames at 1Gb/s.
+      --------------------------------------------------------------------
 
-          -- Wait for 1G monitor process to complete.
-          wait until tx_monitor_finished_1G;
-          management_config_finished <= false;
-
-
-
-    --------------------------------------------------------------------
-    -- Change the speed to 100Mb/s and send the 4 frames
-    --------------------------------------------------------------------
-
-    assert false
-      report "Timing checks are not valid" & cr
-      severity note;
-
-    assert false
-      report "Setting speed to 100Mb/s...." & cr
-      severity note;
-    host_write(emac_config_add, "01000000000000000000000000000000");
-
-    current_speed <= "01";
-
-
-    -- A reset is required after any speed change
-    wait for 100 ns;
-    mac_reset;
-    --------------------------------------------------------------------
-    -- Configure the MAC though the Management I/F.
-    --------------------------------------------------------------------
-    configure_mac;
-    -- Signal that configuration is complete.  Other processes will now
-    -- be allowed to run.
-    management_config_finished <= true;
-
-
-    -- Wait for 100M monitor process to complete.
-    wait until tx_monitor_finished_100M;
-    management_config_finished <= false;
-
-    --------------------------------------------------------------------
-    -- Change the speed back to 1Gb/s and send the 4 frames
-    --------------------------------------------------------------------
-
-    wait for 10000 ns;
-    assert false
-      report "Timing checks are not valid" & cr
-      severity note;
-
-    assert false
-      report "Setting speed to 1Gb/s...." & cr
-      severity note;
-    current_speed <= "10";
-
-    host_write(emac_config_add, "10000000000000000000000000000000");
-
-
-    -- A reset is required after any speed change
-    wait for 100 ns;
-    mac_reset;
-    --------------------------------------------------------------------
-    -- Configure the MAC though the Management I/F.
-    --------------------------------------------------------------------
-    configure_mac;
-    -- Signal that configuration is complete.  Other processes will now
-    -- be allowed to run.
-    management_config_finished <= true;
-
-
-
+      -- Wait for 1G monitor process to complete.
+      wait until tx_monitor_finished_1G;
     wait;
-
   end process p_management;
 
 
@@ -1146,9 +1042,7 @@ begin
     ---------------------------------------------------------------
     procedure send_locallink_frame (current_frame : in natural) is
       variable current_col   : natural := 0;  -- Column counter within frame
-
     begin
-
       current_col := 0;
       wait until rising_edge(gmii_rx_clk);
       ll_data    <= to_stdlogicvector(frame_data(current_frame).columns(current_col).data(7 downto 0));
@@ -1179,7 +1073,6 @@ begin
       for j in 0 to 7 loop
         wait until gmii_rx_clk'event and gmii_rx_clk = '1';
       end loop;
-
     end send_locallink_frame;
 
 
@@ -1193,34 +1086,6 @@ begin
     --      -- frame 2 = errored frame
     --      -- frame 3 = padded frame
     -------------------------------------------------------
-
-
-
-    -------------------------------------------------------
-    -- 100 Mb/s speed
-    -------------------------------------------------------
-    -- Wait for the Management MDIO transaction to finish.
-    wait until management_config_finished;
-    assert false
-      report "Sending four frames at 100Mb/s..." & cr
-      severity note;
-
-    for current_frame in frame_data'low to frame_data'high loop
-      send_locallink_frame(current_frame);
-    end loop;
-
-    -- Wait for 100M monitor process to complete.
-    wait until tx_monitor_finished_100M;
-
-    wait for 100 ns;
-
-    rx_stimulus_finished <= true;
-
-    -- Our work here is done
-    assert false
-      report "Simulation stopped"
-      severity failure;
-
       -------------------------------------------------------
       -- 1 Gb/s speed
       -------------------------------------------------------
@@ -1242,187 +1107,30 @@ begin
       assert false
         report "Simulation stopped"
         severity failure;
-
+     wait;
   end process p_stimulus;
 
 
-
-  ------------------------------------------------------------------------------
-  -- Monitor process. This process checks the data coming out of the
-  -- transmitter to make sure that it matches that inserted into the
-  -- receiver.
-  ------------------------------------------------------------------------------
-  p_monitor : process
-
-    --------------------------------------------------------
-    -- Procedure to check a transmitted frame at 10/100Mb/s
-    --------------------------------------------------------
-    procedure check_frame_10_100m (current_frame : in natural) is
-      variable current_col   : natural := 0;  -- Column counter within frame
-      variable fcs           : std_logic_vector(31 downto 0);
-    begin
-
-      -- Reset the FCS calculation
-      fcs         := (others => '0');
-
-      -- Parse over the preamble field
-      while gmii_tx_en /= '1' or gmii_txd = "00000101" loop
-        wait until mii_tx_clk'event and mii_tx_clk = '1';
-      end loop;
-
-      -- Start comparing transmitted dat to received data
-      assert false
-        report "Comparing Transmitted Data Frames to Received Data Frames" & cr
-        severity note;
-
-      -- Parse over the Start of Frame Delimiter (SFD)
-      if (gmii_txd /= "00001101") then
-        assert false
-          report "SFD not present" & cr
-          severity error;
-      end if;
-      wait until mii_tx_clk'event and mii_tx_clk = '1';
-
-      -- frame has started, loop over columns of frame
-      while ((frame_data(current_frame).columns(current_col).valid)='1') loop
-
-          assert (gmii_tx_en = to_stdulogic(frame_data(current_frame).columns(current_col).valid))
-            report "gmii_tx_en incorrect" & cr
-            severity error;
-
-          if gmii_tx_en = '1' then
-
-            -- The transmitted Destination Address was the Source Address of the injected frame
-            if current_col < 6 then
-              assert (gmii_txd(3 downto 0) =
-                    to_stdlogicvector(frame_data(current_frame).columns(current_col+6).data(3 downto 0)))
-                report "gmii_txd incorrect" & cr
-                severity error;
-              wait until mii_tx_clk'event and mii_tx_clk = '1';
-              assert (gmii_txd(3 downto 0) =
-                    to_stdlogicvector(frame_data(current_frame).columns(current_col+6).data(7 downto 4)))
-                report "gmii_txd incorrect" & cr
-                severity error;
-
-            -- The transmitted Source Address was the Destination Address of the injected frame
-            elsif current_col >= 6 and current_col < 12 then
-              assert (gmii_txd(3 downto 0) =
-                    to_stdlogicvector(frame_data(current_frame).columns(current_col-6).data(3 downto 0)))
-                report "gmii_txd incorrect" & cr
-                severity error;
-              wait until mii_tx_clk'event and mii_tx_clk = '1';
-              assert (gmii_txd(3 downto 0) =
-                    to_stdlogicvector(frame_data(current_frame).columns(current_col-6).data(7 downto 4)))
-                report "gmii_txd incorrect" & cr
-                severity error;
-
-            -- for remainder of frame
-            else
-
-              assert (gmii_txd(3 downto 0) =
-                    to_stdlogicvector(frame_data(current_frame).columns(current_col).data(3 downto 0)))
-                report "gmii_txd incorrect" & cr
-                severity error;
-              wait until mii_tx_clk'event and mii_tx_clk = '1';
-              assert (gmii_txd(3 downto 0) =
-                    to_stdlogicvector(frame_data(current_frame).columns(current_col).data(7 downto 4)))
-                report "gmii_txd incorrect" & cr
-                severity error;
-            end if;
-        end if;
-
-        -- wait for next column of data
-        current_col        := current_col + 1;
-        wait until mii_tx_clk'event and mii_tx_clk = '1';
-      end loop;  -- while data valid
-
-      -- Check the FCS matches that expected from calculation
-      -- Having checked all data columns, txd must contain FCS.
-      for j in 0 to 3 loop
-        assert (gmii_tx_en = '1')
-          report "gmii_tx_en incorrect during FCS field"  & cr
-          severity error;
-
-        assert (gmii_txd(3 downto 0) = fcs(((8*j)+3) downto (8*j)))
-          report "gmii_txd incorrect during FCS field"  & cr
-          severity error;
-
-        wait until mii_tx_clk'event and mii_tx_clk = '1';
-
-        assert (gmii_tx_en = '1')
-          report "gmii_tx_en incorrect during FCS field"  & cr
-          severity error;
-
-        assert (gmii_txd(3 downto 0) = fcs(((8*j)+7) downto ((8*j)+4)))
-          report "gmii_txd incorrect during FCS field"  & cr
-          severity error;
-
-        wait until mii_tx_clk'event and mii_tx_clk = '1';
-      end loop;  -- j
-
-    end check_frame_10_100m;
-
-
-    variable f                  : frame_typ;       -- temporary frame variable
-    variable current_frame      : natural   := 0;  -- current frame pointer
-
-
-  begin  -- process p_monitor
-
-
-    -------------------------------------------------------
-    -- Compare the transmitted frame to the received frames
-    --      -- frame 0 = minimum length frame
-    --      -- frame 1 = type frame
-    --      -- frame 2 = errored frame
-    --      -- frame 3 = padded frame
-    -- Repeated for all stated speeds.
-    -------------------------------------------------------
-
-    -- wait for reset to complete before starting monitor to ignore false startup errors
-    wait until reset'event and reset = '0';
-
-    -------------------------------------------------------
-    -- 100 Mb/s speed
-    -------------------------------------------------------
-
-    current_frame      := 0;
-
-    -- Look for 100Mb/s frames.
-    -- loop over all the frames in the stimulus vector
-    loop
-
-      -- If the current frame had an error inserted then it would have been
-      -- dropped by the FIFO in the design example.  Therefore move immediately
-      -- on to the next frame.
-      while frame_data(current_frame).bad_frame loop
-        current_frame := current_frame + 1;
-      if current_frame = frame_data'high + 1 then
-          exit;
-        end if;
-      end loop;
-
-      -- There are only 4 frames in this test.
-      if current_frame = frame_data'high + 1 then
-        exit;
-      end if;
-
-      -- Check the current frame
-      check_frame_10_100m(current_frame);
-
-      -- move to the next frame
-      if current_frame = frame_data'high then
-        exit;
-      else
-        current_frame := current_frame + 1;
-      end if;
-
+ p_receive : process
+  ---------------------------------------------------------------
+  -- Procedure to receive data from the reception locallink FIFO
+  ---------------------------------------------------------------
+  procedure read_locallink_frame is
+    variable current_col   : natural := 0;  -- Column counter within frame
+  begin
+    current_col := 0;
+    wait until falling_edge(rx_ll_src_rdy);
+    while rx_ll_src_rdy = '0' loop
+      wait until rising_edge(gtx_clk);
+      received_data(current_col) <= rx_ll_data;
+      current_col := current_col + 1;
     end loop;
-    wait for 200 ns;
-    tx_monitor_finished_100M <= true;
+  end read_locallink_frame;
+ begin
 
-    wait;
-  end process p_monitor;
+ read_locallink_frame;
+ wait;
+ end process p_receive;
 
 
 
